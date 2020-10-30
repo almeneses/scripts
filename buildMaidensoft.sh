@@ -19,7 +19,7 @@ mvn package &&
 mkdir -p $OUTPUT_DIR/reports && 
 cp -avrf $PROJECT_DIR/reports/*.jasper $OUTPUT_DIR/reports &&
 cp -avrf $PROJECT_DIR/target/lib $OUTPUT_DIR &&
-cp -avf $PROJECT_DIR/target/Maidensoft* $OUTPUT_DIR/Maidensoft.jar &&
+cp -avf $PROJECT_DIR/target/Maidensoft*.jar $OUTPUT_DIR/Maidensoft.jar &&
 cp -avrf $PROJECT_DIR/data $OUTPUT_DIR;
 
 echo "Done.";
