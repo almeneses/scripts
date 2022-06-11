@@ -1,0 +1,82 @@
+upstream [subdominio] {
+server 127.0.0.1:8069 weight=1 fail_timeout=0;
+}
+
+upstream [subdominio]-im {
+server 127.0.0.1:8072 weight=1 fail_timeout=0;
+}
+
+## http redirects to https ##
+server {
+server_name [subdominio].maidensoft.co;
+# Specifies the maximum accepted body size of a client request,
+# as indicated by the request header Content-Length.
+client_max_body_size 200m;
+
+# add ssl specific settings
+# keepalive_timeout 60;
+# limit ciphers
+# increase proxy buffer to handle some OpenERP web requests
+proxy_buffers 16 64k;
+proxy_buffer_size 128k;
+
+#general proxy settings
+# Let the OpenERP web service know that we’re using HTTPS, otherwise
+# it will generate URL using http:// and not https://
+#proxy_set_header X-Forwarded-Proto https;
+
+
+#general proxy settings
+# force timeouts if the backend dies
+proxy_connect_timeout 600s;
+proxy_send_timeout 600s;
+proxy_read_timeout 600s;
+proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
+
+
+# set headers
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;
+
+# by default, do not forward anything
+proxy_redirect off;
+proxy_buffering off;
+
+location / {
+proxy_pass http://[subdominio];
+}
+
+location /longpolling {
+proxy_pass http://[subdominio]-im;
+}
+
+# cache some static data in memory for 60mins.
+# under heavy load this should relieve stress on the OpenERP web interface a bit.
+location /web/static/ {
+proxy_cache_valid 200 60m;
+proxy_buffering on;
+expires 864000;
+proxy_pass http://[subdominio];
+}
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/[subdominio].maidensoft.co/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/[subdominio].maidensoft.co/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+server {
+    if ($host = [subdominio].maidensoft.co) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+listen 80;
+server_name [subdominio].maidensoft.co;
+    return 404; # managed by Certbot
+
+
+}
