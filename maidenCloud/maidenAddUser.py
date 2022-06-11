@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-import os, sys, argparse, csv
+import os, sys, subprocess, argparse, csv
 from typing import Dict
+from shutil import which
 
 def get_args():
   parser = argparse.ArgumentParser(
@@ -74,7 +75,6 @@ def read_row_data_from_file(filePath, separator) -> Dict[str, str]:
   with open(filePath, 'r') as file:
     csvContent = csv.DictReader(file, delimiter = separator)
     next(csvContent)
-    fileContent = ''
     for row in csvContent:
       yield row
 
@@ -112,13 +112,22 @@ def create_new_maidensoft_users(
     else:
       print(f'Archivo NO creado: {outputPath}')
 
+def execute_certbot():
+  if(which('certbot') is None):
+    subprocess.run(['certbot', '--nginx'])
+  else:
+    raise ValueError('Certbot no está instalado o no está en el PATH\nNose ha podido ejecutar Certbot')
+
+def restart_nginx():
+  subprocess.run(['service', 'nginx', 'restart'])
+
 def main() -> None:
   args = get_args()
 
   try:
     verify_args(args)
 
-    print('\n Creando archivos de configuración para los subdominios...')
+    print('\nCreando archivos de configuración para los subdominios...')
     create_new_maidensoft_users(
       dataFilePath = args.csv,
       templateFilePath = args.template,
@@ -126,6 +135,14 @@ def main() -> None:
       outputFilePath = args.output,
       separator = args.separator
     )
+
+    print('\n -- Autenticando nuevos subdominios con Certbot...')
+    execute_certbot()
+
+    print('\n -- Reiniciando Nginx...')
+    restart_nginx()
+
+    print('\nHecho!')
 
   except Exception as error:
     raise SystemExit(error)
