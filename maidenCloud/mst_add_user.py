@@ -87,7 +87,7 @@ def is_file(filePath) -> bool:
 def is_directory(dirPath) -> bool:
   return os.path.isdir(dirPath)
 
-def create_new_maidensoft_users(
+def create_mst_subdomain(
     dataFilePath:str,
     templateFilePath:str,
     symbolicLinkPath:str,
@@ -128,7 +128,7 @@ def main() -> None:
     verify_args(args)
 
     print('\nCreando archivos de configuración para los subdominios...')
-    create_new_maidensoft_users(
+    create_mst_subdomain(
       dataFilePath = args.csv,
       templateFilePath = args.template,
       symbolicLinkPath = args.symlink,
