@@ -1,10 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os, sys, subprocess, argparse, csv
 from typing import Dict
 from shutil import which
 
+
 def get_args():
+  basePath = os.path.join(os.path.expanduser('~'), 'mst_script')
+
   parser = argparse.ArgumentParser(
     prog = 'maidenAddUsers',
     usage = '%(prog)s [options]',
@@ -17,37 +20,37 @@ def get_args():
   )
 
   parser.add_argument('-t', '--template',
-    help = 'Ubicación de la plantilla (o base) de configuración (EJ: /etc/nginx/sites-available/xxx)',
+    help = f"Ubicación de la plantilla (o base) de configuración (EJ: /etc/nginx/sites-available/xxx) (default: {os.path.join(basePath, 'config_template')}",
     type = str,
-    required = True
+    default = os.path.join(basePath, 'config_template')
   )
 
   parser.add_argument('-o', '--output',
-    help = 'Carpeta de destino de los archivos de configuración (EJ: /home/usuario) (Default: /etc/nginx/sites-available)',
+    help = 'Carpeta de destino de los archivos de configuración (EJ: /home/usuario) (default: /etc/nginx/sites-available)',
     default = '/etc/nginx/sites-available/',
     type = str
   )
 
   parser.add_argument('-l', '--symlink',
     help = 'Carpeta de destino de enlace simbólico para el archivo de configuración creado ' +
-      '(EJ: /etc/nginx/sites-enabled) (Default: /etc/nginx/sites-enabled',
+      '(EJ: /etc/nginx/sites-enabled) (default: /etc/nginx/sites-enabled',
     default = '/etc/nginx/sites-enabled/',
     type = str
   )
 
   parser.add_argument('-s', '--separator',
-    help = 'Caracter separador del archivo CSV (EJ: , ;)',
-    default = ',',
+    help = 'Caracter separador del archivo CSV (EJ: , ;) (default: ;)',
+    default = ';',
     type = str
   )
 
   return parser.parse_args()
 
 def verify_args(command_args) -> None:
-  if not is_file(command_args.csv):
+  if not os.path.isfile(command_args.csv):
     raise ValueError('La ruta especificada para "--csv" no existe')
 
-  if not is_file(command_args.template):
+  if not os.path.isfile(command_args.template):
     raise ValueError('La ruta especificada para "--tempĺate" no existe')
 
   if not is_directory(command_args.output):
@@ -79,10 +82,12 @@ def read_row_data_from_file(filePath, separator) -> Dict[str, str]:
       yield row
 
 def create_symbolic_link(src:str, dest:str) -> None:
-  os.symlink(os.path.abspath(src), os.path.abspath(dest))
+  symlinkPath = os.path.abspath(dest)
 
-def is_file(filePath) -> bool:
-  return os.path.isfile(filePath)
+  if os.path.islink(symlinkPath):
+    print(f'El enlace simbolico al archivo de configuración {symlinkPath} ya existe. Ignorado.')
+  else:
+    os.symlink(os.path.abspath(src), symlinkPath)
 
 def is_directory(dirPath) -> bool:
   return os.path.isdir(dirPath)
@@ -113,13 +118,13 @@ def create_mst_subdomain(
       print(f'Archivo NO creado: {outputPath}')
 
 def execute_certbot():
-  if(which('certbot') is None):
+  if(which('certbot') is not None):
     subprocess.run(['certbot', '--nginx'])
   else:
-    raise ValueError('Certbot no está instalado o no está en el PATH\nNose ha podido ejecutar Certbot')
+    raise ValueError('Certbot no está instalado o no está en el PATH\nNo se ha podido ejecutar Certbot')
 
 def restart_nginx():
-  subprocess.run(['service', 'nginx', 'restart'])
+  subprocess.run(['systemctl', 'restart', 'nginx'])
 
 def main() -> None:
   args = get_args()
