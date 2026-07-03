@@ -9,7 +9,8 @@ def main():
     args = parser.parse_args()
 
     cierres_viernes = obtener_cierres_viernes(args.tickers, args.inicio, args.fin)
-    values(cierres_viernes, args.with_dates)
+
+    print(cierres_viernes)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Descargar precios de cierre de viernes para tickers específicos.")
@@ -17,7 +18,6 @@ def parse_arguments():
     parser.add_argument("--tickers", nargs='+', required=True, help="Lista de tickers separados por espacio.")
     parser.add_argument("--inicio", type=str, required=True, help="Fecha de inicio en formato YYYY-MM-DD.")
     parser.add_argument("--fin", type=str, required=True, help="Fecha de fin en formato YYYY-MM-DD.")
-    parser.add_argument("--with_dates", action='store_true', help="Incluir fechas en la salida.")
 
     return parser
 
@@ -39,12 +39,6 @@ def obtener_cierres_viernes(tickers, inicio, fin)->pd.DataFrame:
 
     return resultados
 
-def values(data: pd.DataFrame, with_dates: bool = False):
-    if(with_dates):
-        print(data)
-    else:
-        for val in data.values.flatten().tolist():
-            print(int(val))
 
 if __name__ == "__main__":
     main()
